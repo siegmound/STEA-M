@@ -1,0 +1,8 @@
+cff-version: 1.2.0
+title: "STEA-M: Spatio-Temporal External Attestation Mechanism"
+authors:
+  - family-names: Pineda Fritas
+    given-names: Jose Luis Junior
+version: 0.1
+date-released: 2026-01-17
+license: CC0-1.0
