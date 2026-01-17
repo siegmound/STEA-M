@@ -1,0 +1,248 @@
+\documentclass[a4paper,11pt]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{courier}
+
+\hypersetup{
+	colorlinks=true,
+	linkcolor=black,
+	urlcolor=blue,
+	pdftitle={STEA-M v0.1},
+	pdfauthor={},
+}
+
+\title{\textbf{STEA-M v0.1}\\
+	\large Spatio-Temporal External Attestation Mechanism}
+\author{Public Prior Art}
+\date{\today}
+
+\begin{document}
+	\maketitle
+	
+	\begin{abstract}
+		STEA-M is a minimal, device-anchored mechanism for producing post-verifiable
+		spatio-temporal attestations. The system enables verification that a physical
+		device was present at a compatible geographic location during a constrained
+		time window and had simultaneous access to multiple independent external
+		reference services. STEA-M does not attest content truth, human identity, or
+		continuous activity. It is published as open prior art.
+	\end{abstract}
+	
+	\section{Design Goals}
+	
+	STEA-M is designed to satisfy the following constraints:
+	
+	\begin{itemize}[noitemsep]
+		\item Post-verifiability
+		\item Minimalism
+		\item Device anchoring (non-personal)
+		\item Fail-secure operation
+		\item Privacy preservation
+	\end{itemize}
+	
+	\section{Definitions}
+	
+	\subsection{STEA-D (Device)}
+	
+	A STEA-D is a physical device capable of:
+	\begin{itemize}[noitemsep]
+		\item secure key storage
+		\item external time acquisition
+		\item external randomness acquisition
+		\item GNSS positioning
+		\item cryptographic hashing
+	\end{itemize}
+	
+	\subsection{Attestation Window}
+	
+	A bounded time interval $[t_0, t_1]$ during which all external inputs MUST be
+	acquired.
+	
+	\section{External Reference Inputs}
+	
+	\subsection{Time Anchors}
+	
+	At least two independent time sources MUST be used, selected from:
+	\begin{itemize}[noitemsep]
+		\item GNSS system time
+		\item authenticated network time services
+		\item institutional time beacons
+	\end{itemize}
+	
+	Attestation MUST be aborted if the time skew exceeds a predefined tolerance
+	$\Delta t_{\max}$.
+	
+	\subsection{Randomness Anchor}
+	
+	STEA-M requires external entropy with the following properties:
+	\begin{itemize}[noitemsep]
+		\item unpredictability during the attestation window
+		\item reconstructability a posteriori
+		\item public consistency for the same window
+	\end{itemize}
+	
+	Internal-only randomness MUST NOT be used.
+	
+	\subsection{GNSS Location Anchor}
+	
+	GNSS positioning MUST support multi-constellation operation (e.g., GPS,
+	Galileo, GLONASS, BeiDou).
+	
+	Recorded data MUST include:
+	\begin{itemize}[noitemsep]
+		\item latitude, longitude (altitude optional)
+		\item timestamp
+		\item constellation identifiers
+		\item satellite identifiers
+	\end{itemize}
+	
+	\section{Device Identity}
+	
+	\subsection{Device Identifier}
+	
+	Each device has a deterministic identifier:
+	\[
+	ID_{dev} = HASH(Manufacturer\_ID \parallel Serial \parallel HW\_Fingerprint \parallel PubKey)
+	\]
+	
+	The identifier is non-reversible and contains no personal data.
+	
+	\subsection{Manufacturer Registry}
+	
+	A public, append-only registry contains:
+	\begin{itemize}[noitemsep]
+		\item Manufacturer identifier
+		\item root public keys
+		\item status information
+	\end{itemize}
+	
+	The registry is informational and non-authoritative.
+	
+	\section{Attestation Generation}
+	
+	\subsection{Trigger}
+	
+	Attestation MUST be initiated by an explicit physical user action.
+	
+	\subsection{Acquisition Phase}
+	
+	During the attestation window, the device MUST acquire:
+	\begin{enumerate}[noitemsep]
+		\item external randomness sequence $R_{ext}$
+		\item reconciled time anchor $T_{anchor}$
+		\item GNSS fix $G$
+	\end{enumerate}
+	
+	Failure of any step aborts attestation.
+	
+	\subsection{Commitment Construction}
+	
+	The commitment is computed as:
+	\[
+	C = HASH(ID_{dev} \parallel R_{ext} \parallel T_{anchor} \parallel G \parallel Version)
+	\]
+	
+	Canonical encoding and ordering MUST be used.
+	
+	\subsection{Output}
+	
+	The device outputs:
+	\begin{itemize}[noitemsep]
+		\item a numeric digest and/or
+		\item a QR-encoded representation of $C$
+	\end{itemize}
+	
+	\section{Verification}
+	
+	Verification consists of:
+	\begin{enumerate}[noitemsep]
+		\item recomputing external randomness for the window
+		\item validating time consistency
+		\item validating GNSS plausibility
+		\item recomputing the commitment
+		\item comparing against the provided value
+	\end{enumerate}
+	
+	Verification does not require access to the original device.
+	
+	\section{Revocation and Ownership}
+	
+	\subsection{Revocation}
+	
+	Devices MAY be marked as:
+	\begin{itemize}[noitemsep]
+		\item ACTIVE
+		\item REVOKED
+		\item STOLEN
+		\item DECOMMISSIONED
+	\end{itemize}
+	
+	Revocation affects future trust but does not invalidate past attestations.
+	
+	\subsection{Ownership Change}
+	
+	Ownership change is handled via key rotation. The device identifier remains
+	unchanged.
+	
+	\section{Threat Model}
+	
+	\subsection{Mitigated Attacks}
+	
+	\begin{itemize}[noitemsep]
+		\item replay
+		\item backdating and forward-dating
+		\item offline fabrication
+		\item AI-generated context forgery
+	\end{itemize}
+	
+	\subsection{Out-of-Scope Attacks}
+	
+	\begin{itemize}[noitemsep]
+		\item content falsification
+		\item staged real-world events
+		\item invasive hardware attacks
+		\item state-level GNSS spoofing
+	\end{itemize}
+	
+	\section{Fail-Secure Behavior}
+	
+	STEA-M MUST:
+	\begin{itemize}[noitemsep]
+		\item produce no output on failure
+		\item avoid degraded or fallback modes
+		\item never simulate missing inputs
+	\end{itemize}
+	
+	\section{Non-Goals}
+	
+	STEA-M does not provide:
+	\begin{itemize}[noitemsep]
+		\item proof of truth
+		\item proof of human identity
+		\item media authenticity
+		\item continuous tracking
+		\item surveillance functionality
+	\end{itemize}
+	
+	\section{Ethical Position}
+	
+	STEA-M is designed to enable verification without surveillance, accountability
+	without identity exposure, and openness without central control.
+	
+	\section{Declaration of Intent}
+	
+	STEA-M is published as open prior art. Any party may implement, modify, or extend
+	the method without restriction.
+	
+\end{document}
